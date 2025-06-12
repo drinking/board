@@ -1,11 +1,41 @@
 body {
     font-family: sans-serif;
-    margin: 20px;
+    /* margin: 20px; */ /* Replaced by margin: 0 */
     background-color: #f4f4f4;
     color: #333;
     display: flex;
     flex-direction: column;
+    /* align-items: center; */ /* This might conflict with full-width children if not intended */
+    height: 100vh;
+    margin: 0; /* Ensure no default margin */
+    overflow: hidden; /* Prevent body scrollbars */
+}
+
+#initialLoadArea {
+    display: flex; /* Use flex to initially show it */
+    flex-direction: column;
+    justify-content: center;
     align-items: center;
+    flex-grow: 1; /* Take up space when subtitleDisplay is hidden */
+    text-align: center;
+    border: 2px dashed #ccc;
+    border-radius: 10px;
+    padding: 20px;
+    margin: 20px; /* Or use padding on body to create space */
+    cursor: pointer;
+    background-color: #f9f9f9;
+}
+#initialLoadArea.dragover {
+    background-color: #e0e0e0; /* Example: slightly different background */
+    border-color: #aaa; /* Example: darker border */
+}
+#initialLoadArea p {
+    font-size: 1.2em;
+    color: #666;
+}
+/* Style for when subtitle player is active */
+.player-active #initialLoadArea {
+    display: none;
 }
 
 #srtFile {
@@ -16,16 +46,20 @@ body {
 }
 
 #subtitleDisplay {
-    width: 80%;
-    max-width: 600px;
-    height: 400px; /* Fixed height */
-    overflow-y: auto; /* Scroll for overflow */
-    border: 1px solid #ddd;
-    background-color: #fff;
-    padding: 15px;
-    margin-bottom: 20px;
-    border-radius: 4px;
-    text-align: center; /* Center subtitle text */
+    width: 80%; /* Kept as per instruction to focus on height */
+    max-width: 600px; /* Kept */
+    /* height: 400px; */ /* Removed for flex-grow */
+    flex-grow: 1; /* Allow it to grow and fill available vertical space */
+    height: auto; /* Override any fixed height, works with flex-grow */
+    overflow-y: auto; /* Allow internal scrolling for subtitles */
+    /* border: 1px solid #ddd; */ /* Removed */
+    border: none; /* Remove border */
+    background-color: #fff; /* Kept */
+    padding: 15px; /* Kept */
+    padding-bottom: 70px; /* Example: enough space for controls height + some margin */
+    margin-bottom: 0; /* Removed or set to 0 as controls will be at bottom */
+    border-radius: 4px; /* Kept */
+    text-align: center; /* Kept */
 }
 
 .subtitle-line {
@@ -42,6 +76,27 @@ body {
     background-color: #e9f5ff; /* Light blue background for highlight */
     opacity: 1;
     border-radius: 4px; /* Rounded corners for highlighted item */
+}
+
+#controls {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: rgba(30, 30, 30, 0.9); /* Dark semi-transparent background */
+    padding: 12px 0; /* Adjust padding */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000; /* Ensure it's above other content */
+    box-sizing: border-box;
+}
+
+#seekBar {
+    width: 60%; /* Or other appropriate width */
+    margin: 0 15px; /* Space around seek bar */
+    cursor: pointer;
+    /* Optional: Add custom styling for track and thumb if desired later */
 }
 
 #controls button {
