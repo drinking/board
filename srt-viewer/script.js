@@ -219,4 +219,3 @@ function updateSubtitleDisplay() {
     pauseBtn.disabled = true;
 });
 
-```
