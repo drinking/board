@@ -46,8 +46,9 @@ body {
 }
 
 #subtitleDisplay {
+    margin-top: 40px;
     width: 80%; /* Kept as per instruction to focus on height */
-    max-width: 600px; /* Kept */
+    max-width: 800px; /* Kept */
     /* height: 400px; */ /* Removed for flex-grow */
     flex-grow: 1; /* Allow it to grow and fill available vertical space */
     height: auto; /* Override any fixed height, works with flex-grow */
@@ -55,7 +56,7 @@ body {
     /* border: 1px solid #ddd; */ /* Removed */
     border: none; /* Remove border */
     background-color: #fff; /* Kept */
-    padding: 15px; /* Kept */
+    padding: 50px 0; /* Kept */
     /* padding-bottom: 70px; */ /* REMOVED */
     margin-bottom: 0; /* Removed or set to 0 as controls will be at bottom */
     border-radius: 4px; /* Kept */
@@ -111,24 +112,22 @@ body {
 #controls {
     /* position: fixed; bottom: 0; left: 0; z-index: 1000; removed */
     /* width: 100%; */ /* Replaced by width: 80% and max-width */
+    margin-top: 10px;
     width: 80%;
-    max-width: 600px;
+    max-width: 800px;
+    border-top: 1px solid #eaeaea;
     /* background-color: rgba(30, 30, 30, 0.9); */ /* Replaced */
-    background-color: #f0f0f0; /* Light grey background */
+    background-color: #ffffff; /* Light grey background */
     /* padding: 12px 0; */ /* Replaced by padding: 10px */
-    padding: 10px;
-    margin: 15px auto; /* auto for horizontal centering, 15px top/bottom */
-    border-radius: 4px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-
+    padding: 10px 15px;
     display: flex; /* Kept */
-    justify-content: center; /* Kept */
+    justify-content: space-between; /* Kept */
     align-items: center; /* Kept */
     box-sizing: border-box; /* Kept */
 }
 
 #seekBar {
-    width: 60%; /* Or other appropriate width */
+    width: 80%; /* Or other appropriate width */
     margin: 0 15px; /* Space around seek bar */
     cursor: pointer;
     /* Optional: Add custom styling for track and thumb if desired later */
@@ -175,9 +174,9 @@ body {
     border: none;
     background-color: #007bff;
     color: white;
-    border-radius: 4px;
+    border-radius: 50%;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 20px;
 }
 
 #controls button:disabled {
