@@ -429,4 +429,3 @@ document.addEventListener('DOMContentLoaded', () => {
 
     updateUIVisibility(false);
 });
-```

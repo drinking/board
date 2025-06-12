@@ -47,7 +47,7 @@ body {
 
 #subtitleDisplay {
     width: 80%; /* Kept as per instruction to focus on height */
-    max-width: 600px; /* Kept */
+    max-width: 800px; /* Kept */
     /* height: 400px; */ /* Removed for flex-grow */
     flex-grow: 1; /* Allow it to grow and fill available vertical space */
     height: auto; /* Override any fixed height, works with flex-grow */
