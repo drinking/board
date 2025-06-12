@@ -33,7 +33,7 @@ function parseSrtContent(srtContent) {
                 console.warn(`Skipping block with invalid timecode format: ${block}`);
             }
         } else if (block.trim() !== "") {
-             console.warn(`Skipping invalid SRT block (not enough lines): ${block}`);
+            console.warn(`Skipping invalid SRT block (not enough lines): ${block}`);
         }
     }
     return subtitles;
@@ -234,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (totalDuration > 0) seekBar.value = currentTime;
             updateSubtitleDisplay();
             if (currentTime >= totalDuration) {
-                 resetPlaybackOnEnd();
+                resetPlaybackOnEnd();
             }
         }, 100);
     }
@@ -279,4 +279,3 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial UI setup
     updateUIVisibility(false);
 });
-```
