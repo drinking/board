@@ -33,10 +33,24 @@ function parseSrtContent(srtContent) {
                 console.warn(`Skipping block with invalid timecode format: ${block}`);
             }
         } else if (block.trim() !== "") {
-            console.warn(`Skipping invalid SRT block (not enough lines): ${block}`);
+             console.warn(`Skipping invalid SRT block (not enough lines): ${block}`);
         }
     }
     return subtitles;
+}
+
+// Fake Translation API
+function fakeTranslateAPI(text) {
+    return new Promise((resolve, reject) => {
+        setTimeout(() => {
+            // Simulate potential error
+            // if (Math.random() < 0.1) { // 10% chance of error
+            //     reject(new Error("Fake API Error: Translation failed."));
+            //     return;
+            // }
+            resolve(`[Placeholder Translation for: "${text}"]`);
+        }, 500); // Simulate network delay
+    });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -63,8 +77,8 @@ document.addEventListener('DOMContentLoaded', () => {
             controls.style.display = 'flex';
             document.body.classList.add('player-active');
             seekBar.disabled = false;
-            playPauseIcon.textContent = '▶'; // Initial state is paused
-            playPauseBtn.disabled = false;   // Enabled as file is loaded
+            playPauseIcon.textContent = '▶';
+            playPauseBtn.disabled = false;
         } else {
             initialLoadArea.style.display = 'flex';
             subtitleDisplay.style.display = 'none';
@@ -102,7 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     totalDuration = subtitles[subtitles.length - 1].endTime;
                     seekBar.max = totalDuration;
                     seekBar.value = 0;
-                    updateUIVisibility(true); // This will set button to ▶ and enabled
+                    updateUIVisibility(true);
                 } else {
                     subtitleDisplay.innerHTML = 'No subtitles found or file is invalid.';
                     updateUIVisibility(false);
@@ -139,7 +153,6 @@ document.addEventListener('DOMContentLoaded', () => {
             handleFile(file);
         } else {
             console.warn('Invalid file type dropped.');
-            // Consider an alert or a message in initialLoadArea
         }
     });
 
@@ -173,7 +186,7 @@ document.addEventListener('DOMContentLoaded', () => {
         currentTime = parseFloat(seekBar.value);
         if (wasPlayingBeforeSeek) {
             startPlayback();
-        } else if (subtitles.length > 0) { // If paused and seeked, ensure button is responsive
+        } else if (subtitles.length > 0) {
             playPauseIcon.textContent = '▶';
             playPauseBtn.disabled = false;
         }
@@ -186,15 +199,69 @@ document.addEventListener('DOMContentLoaded', () => {
                 const subElement = document.createElement('div');
                 subElement.classList.add('subtitle-line');
                 subElement.dataset.index = index;
-                subElement.textContent = sub.text;
-                subElement.addEventListener('click', () => {
+
+                const playOnHoverBtn = document.createElement('span');
+                playOnHoverBtn.className = 'play-on-hover-btn';
+                playOnHoverBtn.textContent = '▶';
+                playOnHoverBtn.setAttribute('role', 'button');
+                playOnHoverBtn.setAttribute('aria-label', 'Play from this line');
+                playOnHoverBtn.addEventListener('click', (event) => {
+                    event.stopPropagation();
                     if (isPlaying) pausePlayback();
                     currentTime = subtitles[index].startTime;
-                    seekBar.value = currentTime;
                     currentSubtitleIndex = index;
+                    seekBar.value = currentTime;
                     updateSubtitleDisplay();
-                    startPlayback(); // This will set icon to Pause
+                    startPlayback();
                 });
+                subElement.appendChild(playOnHoverBtn);
+
+                const textSpan = document.createElement('span');
+                textSpan.className = 'original-subtitle-text';
+                textSpan.textContent = sub.text;
+                subElement.appendChild(textSpan);
+
+                // Add click listener to the subtitle line itself for translation
+                subElement.addEventListener('click', () => {
+                    const originalText = subtitles[index].text; // Or from textSpan.textContent
+                    const existingTranslationDiv = subElement.querySelector('.translation-text');
+                    const existingErrorDiv = subElement.querySelector('.translation-error');
+
+                    if (existingErrorDiv) existingErrorDiv.remove(); // Remove old error first
+
+                    if (existingTranslationDiv) {
+                        existingTranslationDiv.remove();
+                        subElement.classList.remove('loading-translation'); // Ensure loading class is removed
+                    } else {
+                        document.querySelectorAll('.translation-text').forEach(t => t.remove());
+                        document.querySelectorAll('.subtitle-line').forEach(sl => sl.classList.remove('loading-translation'));
+
+
+                        subElement.classList.add('loading-translation');
+
+                        fakeTranslateAPI(originalText)
+                            .then(translation => {
+                                subElement.classList.remove('loading-translation');
+
+                                const translationDiv = document.createElement('div');
+                                translationDiv.classList.add('translation-text');
+                                translationDiv.textContent = translation;
+                                subElement.appendChild(translationDiv);
+                            })
+                            .catch(error => {
+                                subElement.classList.remove('loading-translation');
+                                console.error("Fake translation API error:", error.message);
+                                const errorDiv = document.createElement('div');
+                                errorDiv.classList.add('translation-error');
+                                errorDiv.style.fontSize = '0.8em'; // Basic styling
+                                errorDiv.style.color = 'red';
+                                errorDiv.textContent = "[Translation not available]";
+                                subElement.appendChild(errorDiv);
+                                setTimeout(() => errorDiv.remove(), 3000);
+                            });
+                    }
+                });
+
                 subtitleDisplay.appendChild(subElement);
             });
         }
@@ -225,8 +292,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function startPlayback() {
         if (isPlaying || subtitles.length === 0) return;
         isPlaying = true;
-        playPauseIcon.textContent = '❚❚'; // Pause icon
-        playPauseBtn.disabled = false;    // Should be enabled to allow pausing
+        playPauseIcon.textContent = '❚❚';
+        playPauseBtn.disabled = false;
         seekBar.disabled = false;
         const systemStartTime = Date.now() - currentTime;
         playbackInterval = setInterval(() => {
@@ -234,34 +301,27 @@ document.addEventListener('DOMContentLoaded', () => {
             if (totalDuration > 0) seekBar.value = currentTime;
             updateSubtitleDisplay();
             if (currentTime >= totalDuration) {
-                resetPlaybackOnEnd();
+                 resetPlaybackOnEnd();
             }
         }, 100);
     }
 
     function resetPlaybackOnEnd() {
-        // isPlaying will be false after pausePlayback call
-        pausePlayback(); // Sets icon to ▶, enables button if subs exist
+        pausePlayback();
         currentTime = totalDuration;
         seekBar.value = currentTime;
         currentSubtitleIndex = subtitles.length > 0 ? subtitles.length - 1 : -1;
         updateSubtitleDisplay();
-        // Icon and button state are handled by pausePlayback
     }
 
     function pausePlayback(isSeeking = false) {
-        // if (!isPlaying && !isSeeking) return; // This check might be too restrictive if called to ensure state
-
         isPlaying = false;
         clearInterval(playbackInterval);
         playbackInterval = null;
-
-        playPauseIcon.textContent = '▶'; // Play icon
+        playPauseIcon.textContent = '▶';
         if (!isSeeking) {
             playPauseBtn.disabled = (subtitles.length === 0);
         } else {
-            // If seeking, button should remain enabled to reflect it can be interacted with
-            // (e.g., clicked to definitively stop/play at seeked position)
             playPauseBtn.disabled = false;
         }
     }
@@ -276,6 +336,6 @@ document.addEventListener('DOMContentLoaded', () => {
         updateUIVisibility(false);
     }
 
-    // Initial UI setup
     updateUIVisibility(false);
 });
+```

@@ -63,12 +63,56 @@ body {
 }
 
 .subtitle-line {
-    padding: 8px 0; /* Add some padding between lines */
-    margin-bottom: 5px; /* Space between subtitle blocks */
+    position: relative; /* ADDED/MODIFIED */
+    padding: 8px 0;
+    padding-left: 30px; /* ADDED/ADJUSTED to make space for play button */
+    margin-bottom: 5px;
     line-height: 1.6;
     opacity: 0.7; /* Non-active subtitles are slightly faded */
-    transition: opacity 0.3s ease, background-color 0.3s ease; /* Smooth transitions */
+    transition: opacity 0.3s ease, background-color 0.3s ease, padding-left 0.3s ease; /* Smooth transitions */
 }
+
+.play-on-hover-btn {
+    position: absolute;
+    left: 5px; /* Adjust as needed */
+    top: 50%;
+    transform: translateY(-50%);
+    display: none; /* Initially hidden */
+    cursor: pointer;
+    background-color: #eee; /* Light background */
+    border: 1px solid #ccc;
+    border-radius: 50%; /* Circular */
+    width: 22px;        /* Size of the button */
+    height: 22px;
+    font-size: 12px;    /* Size of the play icon (e.g., '▶') */
+    line-height: 20px; /* Vertically center icon text. May need adjustment. */
+    text-align: center;
+    user-select: none; /* Prevent text selection */
+    /* For better icon centering with flex: */
+    /* display: flex; */
+    /* align-items: center; */
+    /* justify-content: center; */
+}
+
+.subtitle-line:hover .play-on-hover-btn {
+    display: block; /* Show on hover */
+}
+
+.translation-text {
+    font-size: 0.9em;
+    color: #444;
+    margin-top: 8px;
+    padding: 8px;
+    background-color: #f0f0f0;
+    border-radius: 4px;
+    border: 1px solid #e5e5e5;
+    text-align: left;
+}
+
+.subtitle-line.loading-translation {
+    opacity: 0.5; /* Affects whole line */
+}
+
 
 .subtitle-line.highlight {
     font-weight: bold;
