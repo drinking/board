@@ -98,21 +98,7 @@ body {
     display: block; /* Show on hover */
 }
 
-.translation-text {
-    font-size: 0.9em;
-    color: #444;
-    margin-top: 8px;
-    padding: 8px;
-    background-color: #f0f0f0;
-    border-radius: 4px;
-    border: 1px solid #e5e5e5;
-    text-align: left;
-}
-
-.subtitle-line.loading-translation {
-    opacity: 0.5; /* Affects whole line */
-}
-
+/* .translation-text and .subtitle-line.loading-translation styles removed */
 
 .subtitle-line.highlight {
     font-weight: bold;
@@ -196,4 +182,134 @@ body {
 
 #controls button:hover:not(:disabled) {
     background-color: #0056b3;
+}
+
+/* AI Chat Sidebar Styles */
+#aiChatSidebar {
+    position: fixed;
+    right: -360px; /* Initially off-screen (width + some buffer or just width) */
+    top: 0;
+    width: 350px; /* Width of the sidebar */
+    height: 100%;
+    background-color: #f8f9fa; /* Light background color */
+    border-left: 1px solid #dee2e6; /* Border */
+    box-shadow: -3px 0 6px rgba(0, 0, 0, 0.1); /* Shadow for depth */
+    transition: right 0.3s ease-in-out; /* Smooth transition for opening/closing */
+    padding: 15px;
+    box-sizing: border-box; /* Include padding and border in the element's total width and height */
+    z-index: 1100; /* Ensure it's above other content like controls */
+    display: flex;
+    flex-direction: column;
+    font-size: 14px; /* Base font size for sidebar */
+}
+
+#aiChatSidebar.open {
+    right: 0; /* Slide in */
+}
+
+#sidebarCloseBtn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 24px; /* Make '×' larger */
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+}
+
+#aiChatSidebar h3 {
+    font-size: 1em; /* Relative to sidebar's font-size */
+    color: #343a40;
+    margin-top: 10px;
+    margin-bottom: 5px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+}
+#aiChatSidebar h3:first-of-type {
+    margin-top: 20px; /* More space for first h3 after close button */
+}
+
+
+#sidebarSentenceContext {
+    max-height: 120px; /* Limit height, allow scroll */
+    overflow-y: auto;
+    margin-bottom: 15px;
+    padding: 8px;
+    background-color: #e9ecef; /* Slightly different background for context */
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-style: italic;
+    color: #495057;
+    font-size: 0.95em;
+}
+
+#sidebarChatHistory {
+    flex-grow: 1; /* Take available vertical space */
+    overflow-y: auto;
+    border: 1px solid #ced4da;
+    padding: 10px;
+    margin-bottom: 15px;
+    background-color: #ffffff; /* White background for chat */
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column; /* To stack messages */
+}
+
+.sidebar-input-area {
+    display: flex;
+    margin-top: auto; /* Push to bottom if sidebar is flex column */
+}
+
+#sidebarQuestionInput {
+    flex-grow: 1;
+    padding: 8px 10px;
+    border: 1px solid #ced4da;
+    border-radius: 4px 0 0 4px; /* Rounded left corners */
+    font-size: 0.95em;
+}
+
+#sidebarSendQuestionBtn {
+    padding: 8px 12px;
+    background-color: #007bff;
+    color: white;
+    border: 1px solid #007bff;
+    border-left: none; /* Avoid double border with input */
+    border-radius: 0 4px 4px 0; /* Rounded right corners */
+    cursor: pointer;
+    font-size: 0.95em;
+}
+
+#sidebarSendQuestionBtn:hover {
+    background-color: #0056b3;
+}
+
+/* Styles for chat messages (add more as needed) */
+.user-message {
+    text-align: right;
+    margin-bottom: 8px;
+}
+.user-message p {
+    background-color: #007bff;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 15px 15px 3px 15px; /* Bubble style */
+    display: inline-block;
+    max-width: 80%;
+    margin:0;
+}
+
+.ai-message {
+    text-align: left;
+    margin-bottom: 8px;
+}
+.ai-message p {
+    background-color: #e9ecef;
+    color: #343a40;
+    padding: 8px 12px;
+    border-radius: 15px 15px 15px 3px; /* Bubble style */
+    display: inline-block;
+    max-width: 80%;
+    margin:0;
 }

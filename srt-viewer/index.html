@@ -16,6 +16,18 @@
         <button id="playPauseBtn"><span id="playPauseIcon">▶</span></button>
         <input type="range" id="seekBar" value="0" min="0" max="100" step="0.1">
     </div>
+
+    <div id="aiChatSidebar">
+        <button id="sidebarCloseBtn" aria-label="Close sidebar">×</button>
+        <h3>Context:</h3>
+        <div id="sidebarSentenceContext" role="region" aria-live="polite"></div>
+        <h3>Chat:</h3>
+        <div id="sidebarChatHistory" role="log" aria-live="polite"></div>
+        <div class="sidebar-input-area">
+            <input type="text" id="sidebarQuestionInput" placeholder="Ask a question...">
+            <button id="sidebarSendQuestionBtn">Send</button>
+        </div>
+    </div>
     <script src="script.js"></script>
 </body>
 </html>

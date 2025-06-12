@@ -39,17 +39,75 @@ function parseSrtContent(srtContent) {
     return subtitles;
 }
 
-// Fake Translation API
-function fakeTranslateAPI(text) {
-    return new Promise((resolve, reject) => {
+function getContextualSentence(clickedIndex, subtitlesArray) {
+    if (!subtitlesArray || subtitlesArray.length === 0 || clickedIndex < 0 || clickedIndex >= subtitlesArray.length) {
+        return "";
+    }
+    let textParts = [];
+    const maxLinesToScan = 3;
+    const maxLengthChars = 250;
+    textParts.push(subtitlesArray[clickedIndex].text);
+    let currentLength = subtitlesArray[clickedIndex].text.length;
+    let needsMoreForward = !/[.?!"]$/.test(textParts.join(" ").trim());
+    if (needsMoreForward) {
+        for (let i = 1; i < maxLinesToScan; i++) {
+            const nextIndex = clickedIndex + i;
+            if (nextIndex < subtitlesArray.length && currentLength < maxLengthChars) {
+                const nextText = subtitlesArray[nextIndex].text;
+                textParts.push(nextText);
+                currentLength += nextText.length + 1;
+                if (/[.?!"]$/.test(nextText.trim())) {
+                    needsMoreForward = false;
+                    break;
+                }
+            } else { break; }
+        }
+    }
+    let currentFullTextForPrependCheck = textParts.join(" ").trim();
+    let needsMoreBackward = !/^[A-Z0-9“"']/.test(currentFullTextForPrependCheck.charAt(0));
+    if (!needsMoreBackward && clickedIndex > 0) {
+        const prevLineText = subtitlesArray[clickedIndex - 1].text.trim();
+        if (!/[.?!"]$/.test(prevLineText)) {
+            needsMoreBackward = true;
+        }
+    }
+    if (needsMoreBackward) {
+        for (let i = 1; i < maxLinesToScan; i++) {
+            const prevIndex = clickedIndex - i;
+            if (prevIndex >= 0 && currentLength < maxLengthChars) {
+                const prevText = subtitlesArray[prevIndex].text;
+                textParts.unshift(prevText);
+                currentLength += prevText.length + 1;
+            } else { break; }
+        }
+    }
+    let finalSentence = textParts.join(" ").trim();
+    if (finalSentence.length > maxLengthChars) {
+        let lastSpace = finalSentence.lastIndexOf(" ", maxLengthChars);
+        if (lastSpace > -1 && lastSpace < finalSentence.length -1 ) {
+            finalSentence = finalSentence.substring(0, lastSpace) + "...";
+        } else {
+            finalSentence = finalSentence.substring(0, maxLengthChars - 3) + "...";
+        }
+    }
+    finalSentence = finalSentence.replace(/\s\s+/g, ' ');
+    return finalSentence;
+}
+
+function fakeOpenRouteAPI(question, context) {
+    console.log(`Fake API called with question: "${question}", context: "${context}"`);
+    return new Promise((resolve) => {
         setTimeout(() => {
-            // Simulate potential error
-            // if (Math.random() < 0.1) { // 10% chance of error
-            //     reject(new Error("Fake API Error: Translation failed."));
-            //     return;
-            // }
-            resolve(`[Placeholder Translation for: "${text}"]`);
-        }, 500); // Simulate network delay
+            let response = `[Mock AI Response to: "${question}" (context: "${context.substring(0, 30)}...")]`;
+            if (question.toLowerCase().includes("hello") || question.toLowerCase().includes("hi")) {
+                response = "Hello there! How can I help you with this sentence?";
+            } else if (question.toLowerCase().includes("meaning of life")) {
+                response = "The meaning of life is 42, of course! But regarding the subtitle, what specifically interests you?";
+            } else if (context.length > 0 && question.length > 5) {
+                 response = `Interesting question about "${context.substring(0,30)}...". I'll need to think about that. For now, this is a placeholder.`;
+            }
+            resolve(response);
+        }, 700); // Simulate network delay
     });
 }
 
@@ -61,6 +119,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const seekBar = document.getElementById('seekBar');
     const playPauseBtn = document.getElementById('playPauseBtn');
     const playPauseIcon = document.getElementById('playPauseIcon');
+
+    const aiChatSidebar = document.getElementById('aiChatSidebar');
+    const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+    const sidebarSentenceContext = document.getElementById('sidebarSentenceContext');
+    const sidebarChatHistory = document.getElementById('sidebarChatHistory');
+    const sidebarQuestionInput = document.getElementById('sidebarQuestionInput');
+    const sidebarSendQuestionBtn = document.getElementById('sidebarSendQuestionBtn');
 
     let subtitles = [];
     let currentSubtitleIndex = -1;
@@ -90,6 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
             seekBar.disabled = true;
             playPauseIcon.textContent = '▶';
             playPauseBtn.disabled = true;
+            if(aiChatSidebar) aiChatSidebar.classList.remove('open');
         }
     }
 
@@ -104,6 +170,9 @@ document.addEventListener('DOMContentLoaded', () => {
         subtitles = [];
         srtFileInput.value = '';
         subtitleDisplay.innerHTML = 'Loading subtitles...';
+        if (sidebarChatHistory) sidebarChatHistory.innerHTML = ''; // Clear chat on new file
+        if (sidebarSentenceContext) sidebarSentenceContext.textContent = ''; // Clear context on new file
+
 
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -170,6 +239,62 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    if (sidebarCloseBtn) {
+        sidebarCloseBtn.addEventListener('click', () => {
+            if (aiChatSidebar) aiChatSidebar.classList.remove('open');
+        });
+    }
+
+    if (sidebarSendQuestionBtn && sidebarQuestionInput && sidebarChatHistory && sidebarSentenceContext) {
+        sidebarSendQuestionBtn.addEventListener('click', handleSendQuestion);
+        sidebarQuestionInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                handleSendQuestion();
+            }
+        });
+
+        function handleSendQuestion() {
+            const question = sidebarQuestionInput.value.trim();
+            if (question === "") {
+                return;
+            }
+
+            const userMessageDiv = document.createElement('div');
+            userMessageDiv.classList.add('user-message');
+            const userMessageP = document.createElement('p');
+            userMessageP.textContent = question;
+            userMessageDiv.appendChild(userMessageP);
+            sidebarChatHistory.appendChild(userMessageDiv);
+            sidebarChatHistory.scrollTop = sidebarChatHistory.scrollHeight;
+
+            sidebarQuestionInput.value = '';
+            const context = sidebarSentenceContext.textContent;
+
+            fakeOpenRouteAPI(question, context)
+                .then(response => {
+                    const aiMessageDiv = document.createElement('div');
+                    aiMessageDiv.classList.add('ai-message');
+                    const aiMessageP = document.createElement('p');
+                    aiMessageP.textContent = response;
+                    aiMessageDiv.appendChild(aiMessageP);
+                    sidebarChatHistory.appendChild(aiMessageDiv);
+                    sidebarChatHistory.scrollTop = sidebarChatHistory.scrollHeight;
+                })
+                .catch(error => {
+                    console.error("Fake API Error:", error);
+                    const errorMessageDiv = document.createElement('div');
+                    errorMessageDiv.classList.add('ai-message');
+                    const errorMessageP = document.createElement('p');
+                    errorMessageP.textContent = "[Error getting AI response. Please try again.]";
+                    errorMessageP.style.color = 'red'; // Simple error styling
+                    errorMessageDiv.appendChild(errorMessageP);
+                    sidebarChatHistory.appendChild(errorMessageDiv);
+                    sidebarChatHistory.scrollTop = sidebarChatHistory.scrollHeight;
+                });
+        }
+    }
+
+
     seekBar.addEventListener('mousedown', () => {
         if (isPlaying) {
             wasPlayingBeforeSeek = true;
@@ -221,45 +346,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 textSpan.textContent = sub.text;
                 subElement.appendChild(textSpan);
 
-                // Add click listener to the subtitle line itself for translation
                 subElement.addEventListener('click', () => {
-                    const originalText = subtitles[index].text; // Or from textSpan.textContent
-                    const existingTranslationDiv = subElement.querySelector('.translation-text');
-                    const existingErrorDiv = subElement.querySelector('.translation-error');
-
-                    if (existingErrorDiv) existingErrorDiv.remove(); // Remove old error first
-
-                    if (existingTranslationDiv) {
-                        existingTranslationDiv.remove();
-                        subElement.classList.remove('loading-translation'); // Ensure loading class is removed
-                    } else {
-                        document.querySelectorAll('.translation-text').forEach(t => t.remove());
-                        document.querySelectorAll('.subtitle-line').forEach(sl => sl.classList.remove('loading-translation'));
-
-
-                        subElement.classList.add('loading-translation');
-
-                        fakeTranslateAPI(originalText)
-                            .then(translation => {
-                                subElement.classList.remove('loading-translation');
-
-                                const translationDiv = document.createElement('div');
-                                translationDiv.classList.add('translation-text');
-                                translationDiv.textContent = translation;
-                                subElement.appendChild(translationDiv);
-                            })
-                            .catch(error => {
-                                subElement.classList.remove('loading-translation');
-                                console.error("Fake translation API error:", error.message);
-                                const errorDiv = document.createElement('div');
-                                errorDiv.classList.add('translation-error');
-                                errorDiv.style.fontSize = '0.8em'; // Basic styling
-                                errorDiv.style.color = 'red';
-                                errorDiv.textContent = "[Translation not available]";
-                                subElement.appendChild(errorDiv);
-                                setTimeout(() => errorDiv.remove(), 3000);
-                            });
-                    }
+                    const contextSentence = getContextualSentence(index, subtitles);
+                    if (sidebarSentenceContext) sidebarSentenceContext.textContent = contextSentence;
+                    if (sidebarChatHistory) sidebarChatHistory.innerHTML = '';
+                    if (aiChatSidebar) aiChatSidebar.classList.add('open');
                 });
 
                 subtitleDisplay.appendChild(subElement);
