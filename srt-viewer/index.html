@@ -13,9 +13,8 @@
     <input type="file" id="srtFile" accept=".srt" style="display: none;"> <!-- Hide original input -->
     <div id="subtitleDisplay"></div> <!-- Initially hidden by JS/CSS -->
     <div id="controls"> <!-- Initially hidden by JS/CSS -->
-        <button id="playBtn">Play</button>
-        <input type="range" id="seekBar" value="0" min="0" max="100" step="0.1"> <!-- Default max, JS will update -->
-        <button id="pauseBtn">Pause</button>
+        <button id="playPauseBtn"><span id="playPauseIcon">▶</span></button>
+        <input type="range" id="seekBar" value="0" min="0" max="100" step="0.1">
     </div>
     <script src="script.js"></script>
 </body>

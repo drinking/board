@@ -5,7 +5,7 @@ body {
     color: #333;
     display: flex;
     flex-direction: column;
-    /* align-items: center; */ /* This might conflict with full-width children if not intended */
+    align-items: center; /* Ensure this line is present and active */
     height: 100vh;
     margin: 0; /* Ensure no default margin */
     overflow: hidden; /* Prevent body scrollbars */
@@ -99,7 +99,42 @@ body {
     /* Optional: Add custom styling for track and thumb if desired later */
 }
 
+#playPauseBtn {
+    background-color: #007bff; /* Match previous button color or choose new */
+    color: white;
+    border: none;
+    border-radius: 50%; /* Make it circular */
+    width: 50px;       /* Fixed width */
+    height: 50px;      /* Fixed height */
+    font-size: 24px;   /* Adjust icon size */
+    line-height: 50px; /* Center icon vertically - can be redundant with flex */
+    text-align: center;
+    padding: 0;        /* Remove default padding */
+    margin: 0 10px;    /* Keep existing margin or adjust */
+    cursor: pointer;
+    display: flex; /* To help center span if needed */
+    justify-content: center; /* Center icon horizontally */
+    align-items: center; /* Center icon vertically */
+}
+
+#playPauseBtn:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+#playPauseBtn:hover:not(:disabled) {
+    background-color: #0056b3; /* Darker on hover */
+}
+
+#playPauseIcon {
+    display: inline-block; /* Allows fine-tuning if needed */
+    /* If icon is slightly off, flex properties on button are primary for centering */
+}
+
+
 #controls button {
+    /* These styles will apply to other buttons if any are added to #controls later, */
+    /* but #playPauseBtn will mostly use its own specific styles. */
     padding: 10px 20px;
     margin: 0 10px;
     border: none;
