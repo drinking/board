@@ -1,3 +1,48 @@
+// Helper function to parse HH:MM:SS,mmm into milliseconds
+function timecodeToMilliseconds(timecode) {
+    const parts = timecode.match(/(\d{2}):(\d{2}):(\d{2}),(\d{3})/);
+    if (!parts) throw new Error(`Invalid timecode format: ${timecode}`);
+    const hours = parseInt(parts[1], 10);
+    const minutes = parseInt(parts[2], 10);
+    const seconds = parseInt(parts[3], 10);
+    const milliseconds = parseInt(parts[4], 10);
+    return hours * 3600000 + minutes * 60000 + seconds * 1000 + milliseconds;
+}
+
+function parseSrtContent(srtContent) {
+    const subtitles = [];
+    // Normalize line endings
+    const normalizedContent = srtContent.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    // Split into blocks based on double newlines
+    const blocks = normalizedContent.trim().split('\n\n');
+
+    for (const block of blocks) {
+        const lines = block.split('\n');
+        if (lines.length >= 3) {
+            const sequence = lines[0];
+            const timecodeLine = lines[1];
+            const text = lines.slice(2).join('\n');
+
+            const timecodeMatch = timecodeLine.match(/(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})/);
+            if (timecodeMatch) {
+                try {
+                    const startTime = timecodeToMilliseconds(timecodeMatch[1]);
+                    const endTime = timecodeToMilliseconds(timecodeMatch[2]);
+                    subtitles.push({ sequence, startTime, endTime, text });
+                } catch (e) {
+                    console.warn(`Skipping invalid timecode block: ${timecodeLine}`, e.message);
+                }
+            } else {
+                console.warn(`Skipping block with invalid timecode format: ${block}`);
+            }
+        } else if (block.trim() !== "") { // Avoid warning for empty blocks if there are trailing newlines
+             console.warn(`Skipping invalid SRT block (not enough lines): ${block}`);
+        }
+    }
+    return subtitles;
+}
+
+
 document.addEventListener('DOMContentLoaded', () => {
     const srtFileInput = document.getElementById('srtFile');
     const subtitleDisplay = document.getElementById('subtitleDisplay');
@@ -10,81 +55,68 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentTime = 0; // in milliseconds
     let isPlaying = false;
 
-    srtFileInput.addEventListener('change', async (event) => {
+    srtFileInput.addEventListener('change', (event) => { // Removed async
         const file = event.target.files[0];
         if (!file) {
             return;
         }
 
-        const formData = new FormData();
-        formData.append('srtFile', file);
-
-        // Reset previous state
         resetPlayback();
         subtitleDisplay.innerHTML = 'Loading subtitles...';
 
-        try {
-            const response = await fetch('parse_srt.php', {
-                method: 'POST',
-                body: formData
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const result = await response.json();
-
-            if (result.success) {
-                subtitles = result.subtitles;
-                if (subtitles.length > 0) {
-                    renderSubtitles();
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const srtContent = e.target.result;
+            try {
+                const parsedSubs = parseSrtContent(srtContent);
+                if (parsedSubs && parsedSubs.length > 0) {
+                    subtitles = parsedSubs;
+                    renderSubtitles(); // This will now create .subtitle-line elements
                     playBtn.disabled = false;
                     pauseBtn.disabled = true;
                 } else {
-                    subtitleDisplay.innerHTML = 'No subtitles found in the file or file is invalid.';
+                    subtitleDisplay.innerHTML = 'No subtitles found in the file or the file is invalid.';
                     playBtn.disabled = true;
                     pauseBtn.disabled = true;
                 }
-            } else {
-                subtitleDisplay.innerHTML = `Error parsing SRT file: ${result.errors.join(', ')}`;
+            } catch (error) {
+                console.error('Error processing SRT content:', error);
+                subtitleDisplay.innerHTML = `Error processing SRT: ${error.message}`;
                 playBtn.disabled = true;
                 pauseBtn.disabled = true;
             }
-        } catch (error) {
-            console.error('Error fetching or parsing SRT file:', error);
-            subtitleDisplay.innerHTML = `Error: ${error.message}. Make sure parse_srt.php is accessible and working.`;
+        };
+        reader.onerror = () => {
+            subtitleDisplay.innerHTML = 'Error reading file.';
             playBtn.disabled = true;
             pauseBtn.disabled = true;
-        }
+        };
+        reader.readAsText(file);
     });
 
     function renderSubtitles() {
         subtitleDisplay.innerHTML = ''; // Clear previous
-        // Optional: Display all subtitles initially or just the first one
-        // For now, we'll just prepare them and let playback handle display
         if (subtitles.length > 0) {
-            // Create divs for each subtitle to allow individual styling/highlighting
             subtitles.forEach((sub, index) => {
                 const subElement = document.createElement('div');
                 subElement.classList.add('subtitle-line');
-                subElement.dataset.index = index;
-                subElement.textContent = sub.text;
+                subElement.dataset.index = index; // Store index for highlighting
+                subElement.textContent = sub.text; // Display text
                 subtitleDisplay.appendChild(subElement);
             });
         }
-         updateSubtitleDisplay(); // Initial display based on currentTime (0)
+        updateSubtitleDisplay(); // Initial display based on currentTime (0)
     }
 
     function updateSubtitleDisplay() {
-        let activeSub = null;
-        currentSubtitleIndex = -1;
+        let activeSubFound = false;
+        currentSubtitleIndex = -1; // Reset before checking
 
         for (let i = 0; i < subtitles.length; i++) {
             const sub = subtitles[i];
             if (currentTime >= sub.startTime && currentTime <= sub.endTime) {
-                activeSub = sub;
                 currentSubtitleIndex = i;
+                activeSubFound = true;
                 break;
             }
         }
@@ -93,15 +125,16 @@ document.addEventListener('DOMContentLoaded', () => {
         subElements.forEach((el, index) => {
             if (index === currentSubtitleIndex) {
                 el.classList.add('highlight');
-                // Scroll into view if needed
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // Smart scroll: only scroll if the element is not fully visible
+                const displayRect = subtitleDisplay.getBoundingClientRect();
+                const elRect = el.getBoundingClientRect();
+                if (elRect.top < displayRect.top || elRect.bottom > displayRect.bottom) {
+                   el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
             } else {
                 el.classList.remove('highlight');
             }
         });
-
-        // If no subtitle is active, clear display or show placeholder
-        // This version keeps all subs visible and highlights the active one.
     }
 
 
@@ -111,55 +144,30 @@ document.addEventListener('DOMContentLoaded', () => {
         playBtn.disabled = true;
         pauseBtn.disabled = false;
 
-        // If playback was paused, currentSubtitleIndex might be set.
-        // If starting from the beginning, find the first subtitle.
-        if (currentTime === 0) {
-            currentSubtitleIndex = 0;
-        } else {
-            // Resume: find where we left off
-            let resumeIndex = -1;
-            for(let i = 0; i < subtitles.length; i++) {
-                if (currentTime < subtitles[i].endTime) {
-                    resumeIndex = i;
-                    break;
-                }
-            }
-            currentSubtitleIndex = resumeIndex !== -1 ? resumeIndex : subtitles.length; // if past all, index is length
-        }
-
-
-        const startTime = Date.now() - currentTime;
+        const systemStartTime = Date.now() - currentTime;
 
         playbackInterval = setInterval(() => {
-            currentTime = Date.now() - startTime;
+            currentTime = Date.now() - systemStartTime;
             updateSubtitleDisplay();
 
-            // Stop if past the last subtitle's end time
-            if (currentSubtitleIndex >= subtitles.length || (subtitles.length > 0 && currentTime > subtitles[subtitles.length -1].endTime + 500 ) ) { // add a little buffer
-                 // If we've played past all known subtitles
-                if (currentSubtitleIndex === -1 && subtitles.length > 0 && currentTime > subtitles[subtitles.length - 1].endTime) {
-                     resetPlaybackOnEnd();
-                } else if (currentSubtitleIndex !== -1 && currentSubtitleIndex < subtitles.length && currentTime > subtitles[currentSubtitleIndex].endTime) {
-                    // It means we are between subtitles
-                } else if (currentSubtitleIndex === -1 && subtitles.length === 0) {
-                    // No subtitles loaded
-                     resetPlaybackOnEnd();
-                } else if (currentSubtitleIndex !== -1 && currentSubtitleIndex >= subtitles.length-1 && currentTime > subtitles[currentSubtitleIndex].endTime){
-                    // End of subtitles
-                     resetPlaybackOnEnd();
+            if (subtitles.length > 0) {
+                const lastSub = subtitles[subtitles.length - 1];
+                if (currentTime > lastSub.endTime + 500) {
+                    resetPlaybackOnEnd();
                 }
+            } else {
+                 resetPlaybackOnEnd();
             }
-        }, 100); // Update roughly 10 times a second
+        }, 100);
     }
 
     function resetPlaybackOnEnd() {
         pausePlayback();
         currentTime = 0;
         currentSubtitleIndex = -1;
-        playBtn.disabled = false;
+        playBtn.disabled = (subtitles.length === 0);
         pauseBtn.disabled = true;
-        updateSubtitleDisplay(); // Clear highlight
-        // Optionally, reset scroll position
+        updateSubtitleDisplay();
         subtitleDisplay.scrollTop = 0;
     }
 
@@ -169,27 +177,32 @@ document.addEventListener('DOMContentLoaded', () => {
         isPlaying = false;
         clearInterval(playbackInterval);
         playbackInterval = null;
-        playBtn.disabled = false;
+        playBtn.disabled = (subtitles.length === 0);
         pauseBtn.disabled = true;
     }
 
     function resetPlayback() {
         pausePlayback();
-        subtitles = [];
         currentSubtitleIndex = -1;
         currentTime = 0;
-        subtitleDisplay.innerHTML = '';
-        playBtn.disabled = true;
-        pauseBtn.disabled = true;
-        if (srtFileInput) {
-            srtFileInput.value = ''; // Clear the file input
+        // Only clear the visual display of subtitles, keep `subtitles` array if already loaded
+        // unless it's explicitly a new file load scenario (handled by srtFileInput listener)
+        if (subtitles.length === 0) {
+             subtitleDisplay.innerHTML = ''; // Clear if no subs
+        } else {
+            // Re-render to clear highlights but keep text if subs are loaded
+            renderSubtitles();
         }
+        playBtn.disabled = (subtitles.length === 0); // Disable play if no subs
+        pauseBtn.disabled = true;
     }
 
     playBtn.addEventListener('click', startPlayback);
     pauseBtn.addEventListener('click', pausePlayback);
 
-    // Initial button states
+    // Initial button states based on whether subtitles are loaded (they aren't initially)
     playBtn.disabled = true;
     pauseBtn.disabled = true;
 });
+
+```
