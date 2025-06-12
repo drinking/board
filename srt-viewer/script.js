@@ -294,4 +294,3 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial UI setup, ensures seekbar disabled, buttons disabled etc.
     updateUIVisibility(false);
 });
-```
