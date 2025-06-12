@@ -95,47 +95,61 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function renderSubtitles() {
-        subtitleDisplay.innerHTML = ''; // Clear previous
+        subtitleDisplay.innerHTML = ''; // Clear previous subtitles
         if (subtitles.length > 0) {
             subtitles.forEach((sub, index) => {
                 const subElement = document.createElement('div');
                 subElement.classList.add('subtitle-line');
-                subElement.dataset.index = index; // Store index for highlighting
-                subElement.textContent = sub.text; // Display text
+                subElement.dataset.index = index; // Store index for easy access
+                subElement.textContent = sub.text;
+
+                subElement.addEventListener('click', () => {
+                    // console.log(`Clicked subtitle index: ${index}, time: ${subtitles[index].startTime}`);
+                    if (isPlaying) {
+                        pausePlayback(); // Pause current playback
+                    }
+                    currentTime = subtitles[index].startTime; // Set current time to the start of the clicked subtitle
+                    currentSubtitleIndex = index; // Explicitly set currentSubtitleIndex
+                    updateSubtitleDisplay(); // Update display immediately to highlight clicked line
+                    startPlayback(); // Start playback from the new time
+                });
                 subtitleDisplay.appendChild(subElement);
             });
         }
-        updateSubtitleDisplay(); // Initial display based on currentTime (0)
+        updateSubtitleDisplay(); // Initial call to highlight based on currentTime (usually 0)
     }
 
-    function updateSubtitleDisplay() {
-        let activeSubFound = false;
-        currentSubtitleIndex = -1; // Reset before checking
+function updateSubtitleDisplay() {
+    let activeSubFound = false;
+    let newSubtitleIndex = -1;
 
-        for (let i = 0; i < subtitles.length; i++) {
-            const sub = subtitles[i];
-            if (currentTime >= sub.startTime && currentTime <= sub.endTime) {
-                currentSubtitleIndex = i;
-                activeSubFound = true;
-                break;
-            }
+    for (let i = 0; i < subtitles.length; i++) {
+        const sub = subtitles[i];
+        if (currentTime >= sub.startTime && currentTime <= sub.endTime) {
+            newSubtitleIndex = i;
+            activeSubFound = true;
+            break;
         }
+    }
 
-        const subElements = subtitleDisplay.querySelectorAll('.subtitle-line');
-        subElements.forEach((el, index) => {
-            if (index === currentSubtitleIndex) {
+    currentSubtitleIndex = newSubtitleIndex;
+
+    const subElements = subtitleDisplay.querySelectorAll('.subtitle-line');
+    subElements.forEach((el, index) => {
+        if (index === currentSubtitleIndex) {
+            if (!el.classList.contains('highlight')) {
                 el.classList.add('highlight');
-                // Smart scroll: only scroll if the element is not fully visible
-                const displayRect = subtitleDisplay.getBoundingClientRect();
-                const elRect = el.getBoundingClientRect();
-                if (elRect.top < displayRect.top || elRect.bottom > displayRect.bottom) {
-                   el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-            } else {
+            }
+            // This will attempt to center the active subtitle every 100ms.
+            // Modern browsers are usually good at optimizing this if already centered.
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+            if (el.classList.contains('highlight')) {
                 el.classList.remove('highlight');
             }
-        });
-    }
+        }
+    });
+}
 
 
     function startPlayback() {
