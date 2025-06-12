@@ -47,7 +47,7 @@ body {
 
 #subtitleDisplay {
     width: 80%; /* Kept as per instruction to focus on height */
-    max-width: 800px; /* Kept */
+    max-width: 600px; /* Kept */
     /* height: 400px; */ /* Removed for flex-grow */
     flex-grow: 1; /* Allow it to grow and fill available vertical space */
     height: auto; /* Override any fixed height, works with flex-grow */
@@ -56,7 +56,7 @@ body {
     border: none; /* Remove border */
     background-color: #fff; /* Kept */
     padding: 15px; /* Kept */
-    padding-bottom: 70px; /* Example: enough space for controls height + some margin */
+    /* padding-bottom: 70px; */ /* REMOVED */
     margin-bottom: 0; /* Removed or set to 0 as controls will be at bottom */
     border-radius: 4px; /* Kept */
     text-align: center; /* Kept */
@@ -109,17 +109,22 @@ body {
 }
 
 #controls {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    background-color: rgba(30, 30, 30, 0.9); /* Dark semi-transparent background */
-    padding: 12px 0; /* Adjust padding */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000; /* Ensure it's above other content */
-    box-sizing: border-box;
+    /* position: fixed; bottom: 0; left: 0; z-index: 1000; removed */
+    /* width: 100%; */ /* Replaced by width: 80% and max-width */
+    width: 80%;
+    max-width: 600px;
+    /* background-color: rgba(30, 30, 30, 0.9); */ /* Replaced */
+    background-color: #f0f0f0; /* Light grey background */
+    /* padding: 12px 0; */ /* Replaced by padding: 10px */
+    padding: 10px;
+    margin: 15px auto; /* auto for horizontal centering, 15px top/bottom */
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+
+    display: flex; /* Kept */
+    justify-content: center; /* Kept */
+    align-items: center; /* Kept */
+    box-sizing: border-box; /* Kept */
 }
 
 #seekBar {
